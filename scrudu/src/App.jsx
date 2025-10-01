@@ -3,6 +3,9 @@ import './App.css';
 
 const translations = {
   en: {
+    title: "Digital Technology",
+    subtitle: "Unit 1 2024",
+    languageToggle: "Gaeilge",
     question: "Question",
     selectOption: "Select an option",
     yourAnswer: "Your Answer:",
@@ -16,6 +19,9 @@ const translations = {
     outOf: "out of"
   },
   ga: {
+    title: "Teicneolaíocht Dhigiteach",
+    subtitle: "Aonad 1 2024",
+    languageToggle: "English",
     question: "Ceist",
     selectOption: "Roghnaigh Freagra",
     yourAnswer: "Do Freagra:",
@@ -30,8 +36,8 @@ const translations = {
   }
 };
 
-function QuestionCard({ question, studentAnswer, onAnswerChange, currentLanguage, isSubmitted, showFeedback, score, feedbackText }) {
-  const t = translations[currentLanguage];
+function QuestionCard({ question, studentAnswer, onAnswerChange, isSubmitted, showFeedback, score, feedbackText, language, onLanguageToggle }) {
+  const t = translations[language];
 
   const handleAnswerChange = (e) => {
     onAnswerChange(question.id, e.target.value);
@@ -44,7 +50,7 @@ function QuestionCard({ question, studentAnswer, onAnswerChange, currentLanguage
         <label htmlFor={question.id} className="text-lg font-medium text-gray-700">{t.yourAnswer}</label>
         <textarea
           id={question.id}
-          className="large-text-area mt-1 p-3 w-full rounded-md border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+          className="text-xl mt-1 p-3 w-full rounded-md border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
           rows="6"
           value={studentAnswer || ''}
           onChange={handleAnswerChange}
@@ -74,14 +80,22 @@ function QuestionCard({ question, studentAnswer, onAnswerChange, currentLanguage
   }
 
   return (
-    <div className="question-card bg-gray-50 p-6 flex flex-col gap-4">
-      <h3 className="text-xl font-semibold mb-2">{t.question} {question.number}</h3>
+    <div className="bg-white p-6 rounded-xl shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl flex flex-col gap-4">
+      <div className="flex justify-between items-center mb-2">
+        <h3 className="text-xl font-semibold">{t.question} {question.number}</h3>
+        <button 
+          onClick={() => onLanguageToggle(question.id)} 
+          className="bg-slate-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200 hover:bg-slate-700 hover:scale-105 text-sm"
+        >
+          {language === 'en' ? 'Gaeilge' : 'English'}
+        </button>
+      </div>
       <div className="question-images flex justify-center">
-        <img src={currentLanguage === 'en' ? question.imageEnUrl : question.imageGaUrl} alt={`Question ${question.number} image`} className="rounded-lg shadow-inner max-w-full h-auto mb-4" />
+        <img src={language === 'en' ? question.imageEnUrl : question.imageGaUrl} alt={`Question ${question.number} image`} className="rounded-lg shadow-inner max-w-full h-auto mb-4" />
       </div>
       {answerInput}
 
-      <div className={`answers-container bg-white border border-gray-200 p-4 rounded-lg mt-4 transition-all duration-500 ${showFeedback ? 'show' : ''}`}>
+      <div className={`transition-all duration-500 ease-in-out overflow-hidden max-h-0 ${showFeedback ? 'max-h-[500px] p-6 mt-4' : ''} bg-gray-50 border border-gray-200 rounded-lg`}>
         <p className="font-bold text-lg mb-2 text-gray-800">{t.yourScore} <span className="text-green-600">{score}</span> / {question.maxMarks}</p>
         <p className="font-medium text-gray-800">{t.correctAnswer} <span className="text-green-600">{question.correctAnswer}</span></p>
         <p className="mt-2 text-gray-600">{t.feedback} <span>{feedbackText}</span></p>
@@ -91,7 +105,6 @@ function QuestionCard({ question, studentAnswer, onAnswerChange, currentLanguage
 }
 
 function App() {
-  const [currentLanguage, setCurrentLanguage] = useState('ga');
   const [studentAnswers, setStudentAnswers] = useState({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [examQuestions, setExamQuestions] = useState([]);
@@ -99,8 +112,16 @@ function App() {
   const [totalScore, setTotalScore] = useState(0);
   const [totalMaxMarks, setTotalMaxMarks] = useState(0);
   const [questionFeedback, setQuestionFeedback] = useState({});
+  const [questionLanguages, setQuestionLanguages] = useState({});
 
-  const t = translations[currentLanguage];
+  const t = translations['ga']; // Default UI language to Irish
+
+  const toggleQuestionLanguage = (questionId) => {
+    setQuestionLanguages(prev => ({
+      ...prev,
+      [questionId]: prev[questionId] === 'en' ? 'ga' : 'en'
+    }));
+  };
 
   const loadExamData = useCallback(async () => {
     const response = await fetch('/Scruduithe.tsv');
@@ -129,8 +150,15 @@ function App() {
           ga: question.ocr_freagra
         }
       };
-    }).filter(q => q.id && q.maxMarks > 0); // Filter out any questions without an ID
+    }).filter(q => q.id && q.maxMarks > 0);
     setExamQuestions(questions);
+
+    const initialLangs = {};
+    questions.forEach(q => {
+      initialLangs[q.id] = 'ga'; // Default all questions to Irish
+    });
+    setQuestionLanguages(initialLangs);
+
     setTotalMaxMarks(questions.reduce((sum, q) => sum + q.maxMarks, 0));
   }, []);
 
@@ -151,6 +179,7 @@ function App() {
 
     examQuestions.forEach(q => {
       const studentAns = studentAnswers[q.id];
+      const currentLanguage = questionLanguages[q.id] || 'ga';
       let marks = 0;
       let feedbackText = '';
 
@@ -175,6 +204,7 @@ function App() {
     setTotalScore(score);
     setQuestionFeedback(newQuestionFeedback);
     setIsSubmitted(true);
+    setShowCorrectAnswers(true);
   };
 
   const toggleShowAnswers = () => {
@@ -182,37 +212,38 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center p-4 md:p-8">
+    <div className="min-h-screen flex flex-col items-center p-4 md:p-8 bg-gray-100">
 
-      <header className="w-full max-w-4xl bg-white rounded-xl shadow-lg p-6 mb-6 text-center">
-        <h1 className="text-3xl md:text-4xl font-bold text-slate-800 mb-2">Teicneolaíocht Dhigiteach</h1>
-        <p className="text-lg text-slate-600">Aonad 1 2024</p>
+      <header className="w-full max-w-4xl bg-white rounded-xl shadow-lg p-6 mb-8 text-center">
+        <h1 className="text-3xl md:text-4xl font-bold text-slate-800 mb-1">Teicneolaíocht Dhigiteach / Digital Technology</h1>
+        <p className="text-lg text-slate-600">Aonad 1 2024 / Unit 1 2024</p>
       </header>
 
-      <main id="exam-container" className="w-full max-w-4xl bg-white rounded-xl shadow-lg p-6 flex flex-col gap-6">
+      <main id="exam-container" className="w-full max-w-4xl flex flex-col gap-6">
         {examQuestions.map(q => (
           <QuestionCard
             key={q.id}
             question={q}
             studentAnswer={studentAnswers[q.id]}
             onAnswerChange={handleAnswerChange}
-            currentLanguage={currentLanguage}
             isSubmitted={isSubmitted}
             showFeedback={showCorrectAnswers}
             score={questionFeedback[q.id]?.score}
             feedbackText={questionFeedback[q.id]?.feedbackText}
+            language={questionLanguages[q.id] || 'ga'}
+            onLanguageToggle={toggleQuestionLanguage}
           />
         ))}
       </main>
 
-      <div className="w-full max-w-4xl flex flex-col items-center mt-6 gap-4">
+      <div className="w-full max-w-4xl flex flex-col items-center mt-8 gap-4">
         {!isSubmitted && (
           <button
             id="submit-btn"
-            className="w-full md:w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-colors duration-300"
+            className="w-full md:w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105 duration-300"
             onClick={handleSubmit}
           >
-            {t.submitAnswers}
+            {translations.ga.submitAnswers} / {translations.en.submitAnswers}
           </button>
         )}
         {isSubmitted && (
@@ -222,10 +253,10 @@ function App() {
             </div>
             <button
               id="show-answers-btn"
-              className="w-full md:w-1/2 bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-colors duration-300"
+              className="w-full md:w-1/2 bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105 duration-300"
               onClick={toggleShowAnswers}
             >
-              {showCorrectAnswers ? t.hideAnswers : t.showCorrectAnswers}
+              {translations.ga.showCorrectAnswers} / {translations.en.showCorrectAnswers}
             </button>
           </>
         )}

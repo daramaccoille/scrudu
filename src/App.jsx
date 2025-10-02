@@ -36,35 +36,58 @@ const translations = {
   }
 };
 
+const CheckIcon = () => (
+  <svg className="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+  </svg>
+);
+
+const XIcon = () => (
+  <svg className="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
+
 function QuestionCard({ question, studentAnswer, onAnswerChange, isSubmitted, showFeedback, score, feedbackText, language, onLanguageToggle }) {
   const t = translations[language];
+
+  console.log(`Question ${question.number}: isSubmitted=${isSubmitted}, score=${score}`);
 
   const handleAnswerChange = (e) => {
     onAnswerChange(question.id, e.target.value);
   };
 
+  const isCorrect = score > 0;
+
+  const baseInputClass = "text-xl mt-1 p-3 w-full rounded-md border-2";
+
   let answerInput;
   if (question.type === 'teacs_gairid') {
     answerInput = (
-      <>
+      <div className="relative">
         <label htmlFor={question.id} className="text-lg font-medium text-gray-700">{t.yourAnswer}</label>
         <textarea
           id={question.id}
-          className="text-xl mt-1 p-3 w-full rounded-md border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+          className={`${baseInputClass} ${isSubmitted ? (isCorrect ? 'border-green-500 ring-green-500' : 'border-red-500 ring-red-500') : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'}`}
           rows="6"
           value={studentAnswer || ''}
           onChange={handleAnswerChange}
           disabled={isSubmitted}
         ></textarea>
-      </>
+        {isSubmitted && (
+          <div className="absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none">
+            {isCorrect ? <CheckIcon /> : <XIcon />}
+          </div>
+        )}
+      </div>
     );
   } else if (question.type === 'ilroghnach') {
     answerInput = (
-      <>
+      <div className="relative">
         <label htmlFor={question.id} className="text-lg font-medium text-gray-700">{t.yourAnswer}</label>
         <select
           id={question.id}
-          className="mt-1 p-3 w-full rounded-md border border-gray-300 bg-white focus:ring-blue-500 focus:border-blue-500"
+          className={`${baseInputClass} bg-white ${isSubmitted ? (isCorrect ? 'border-green-500 ring-green-500' : 'border-red-500 ring-red-500') : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'}`}
           value={studentAnswer || ''}
           onChange={handleAnswerChange}
           disabled={isSubmitted}
@@ -75,7 +98,12 @@ function QuestionCard({ question, studentAnswer, onAnswerChange, isSubmitted, sh
           <option value="C">C</option>
           <option value="D">D</option>
         </select>
-      </>
+        {isSubmitted && (
+          <div className="absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none">
+            {isCorrect ? <CheckIcon /> : <XIcon />}
+          </div>
+        )}
+      </div>
     );
   }
 

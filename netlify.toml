@@ -1,0 +1,11 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+  base = "scrudu-rebuild"
+
+[deploy]
+  branch = "master"
+
+[build.environment]
+  NODE_VERSION = "18"
+  CI = "false"

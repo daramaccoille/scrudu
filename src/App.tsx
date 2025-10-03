@@ -219,7 +219,8 @@ function App() {
   const loadExamData = useCallback(async () => {
     const response = await fetch('/Scruduithe.tsv');
     const tsvData = await response.text();
-    const lines = tsvData.split('\r\n');
+    const lines = tsvData.split(/\r?\n/);
+
     const headers = lines[0].split('\t');
 
     const questions: Question[] = lines.slice(1).map(line => {
@@ -244,8 +245,8 @@ function App() {
           ga: question.ocr_freagra
         }
       };
-    }).filter(q => q.id && q.maxMarks > 0);
-
+    }).filter(q => {
+      return q.number && q.maxMarks > 0;    });
     // Sort questions by number (numeric) and focheist (alphabetical)
     questions.sort((a, b) => {
       // Compare number as integer
